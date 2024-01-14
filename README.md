@@ -22,4 +22,4 @@ that enables control of the Cube through a desktop web browser or a smartphone.
 OS and base software installation
 ---------------------------------
 
-Read [os-installation.md](operating-system%2Fos-installation.md).
+Read [os-installation.md](os-installation.md).
