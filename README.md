@@ -1,6 +1,8 @@
 LED Cube
 ========
 
+_To be completed..._
+
 This is the main repository of the LED Cube project. In this repository you will find : 
 
 - Main description of the LED Cube. 
