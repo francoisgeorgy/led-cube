@@ -22,47 +22,64 @@ that installation and configuration is a little more tedious (especially for wif
 
 ## Log in the RPi
 
-1. Find the ip address of the RPi :
-   1. `sudo nmap -sn 192.168.1.0/24 | grep -B2 "E1:12"`
+Find the ip address of the RPi :
 
+    sudo nmap -sn 192.168.1.0/24 | grep -iB2 "D8:3A:DD"
 
-         Nmap scan report for pi-e1-12 (192.168.1.100)
-         Host is up (0.12s latency).
-         MAC Address: D8:3A:DD:39:E1:12 (Unknown)  
-1. Log in :
-   1. ssh user@192.168.0.100
+If the Raspberry Pi is found, the result should be something like : 
 
-## Adjust config : 
+    Nmap scan report for pi-e1-12 (192.168.1.100)
+    Host is up (0.12s latency).
+    MAC Address: D8:3A:DD:39:E1:12 (Unknown)
 
-    sudo sed -i 's/audio=on/audio=off/' /boot/config.txt
-    echo " isolcpus=3" | sudo tee -a /boot/firmware/cmdline.txt
+Log in using the IP address :
 
-`audio=off` is not sufficient, we need to blacklist the bmc2835 module  :
-   
-do : 
+(replace `user` by the username you chose previously)
 
-    cat <<EOF | sudo tee /etc/modprobe.d/blacklist-rgb-matrix.conf
+    ssh user@192.168.0.100
 
-enter : 
+## OS configuration 
 
-    blacklist snd_bcm2835
-    EOF
-   
-source : https://github.com/hzeller/rpi-rgb-led-matrix/blob/master/README.md#bad-interaction-with-sound
-
-i2c :
-
-    sudo raspi-config nonint do_i2c 0
-
-update os : 
+First, make sure the OS is up-to-date : 
 
     sudo apt update && sudo apt upgrade -y
 
-remove unwanted tools and apps :
+### Disable sound system : 
 
-    sudo apt-get remove bluez bluez-firmware pi-bluetooth triggerhappy pigpio -y
+We need to disable the Raspberry Pi sound system because the LED matrix driver uses the same hardware
+and can't work if the sound is enabled. 
 
-install packages we will need later on :
+Following instructions given in https://github.com/hzeller/rpi-rgb-led-matrix/blob/master/README.md#bad-interaction-with-sound, do : 
+
+    sudo sed -i 's/audio=on/audio=off/' /boot/firmware/config.txt
+
+This is not sufficient and we also need to blacklist the sound module : 
+
+    echo "blacklist snd_bcm2835" > blacklist-snd_bcm2835.conf
+    sudo mv blacklist-snd_bcm2835.conf /etc/modprobe.d/
+    sudo chown root:root /etc/modprobe.d/blacklist-snd_bcm2835.conf
+
+### CPU usage : 
+
+The rpi-rgb-led-matrix project also recommend to reserve one CPU core for the display refresh : 
+
+    echo " isolcpus=3" | sudo tee -a /boot/firmware/cmdline.txt
+
+### I2C :
+
+We need to enable I2C (used by the accelerometer) :
+
+    sudo raspi-config nonint do_i2c 0
+
+### Remove unused applications : 
+
+Remove unwanted tools :
+
+    sudo apt-get remove triggerhappy pigpio -y
+
+### Install dev tools :   
+
+Install the packages we will need later on :
 
     sudo apt install \
          git build-essential cmake \
@@ -76,20 +93,24 @@ check that python version >= 3.10 :
 
     python -V
 
+you should get an answer like : 
+
     Python 3.11.2
 
-reboot :
+### Reboot
+
+Finally, reboot to make sure all the previous changes are loaded :
 
     sudo reboot
 
+## Cube software installation
 
-## create a home dir for the cube
+### Create a home dir for the cube
 
     sudo mkdir /home/cube
     sudo chown $USER:$USER /home/cube
-    cd /home/cube
    
-## install rgb lib : 
+### Install the RGB library : 
 
     cd /home/cube
     git clone https://github.com/hzeller/rpi-rgb-led-matrix.git
@@ -103,39 +124,29 @@ try a demo :
     cd examples-api-use/
     sudo ./demo --led-rows=64 --led-cols=64 --led-slowdown-gpio=5 -D 0
 
-with all the panels : 
-
-    sudo ./demo --led-rows=64 --led-cols=64 --led-chain 3 --led-parallel 2 --led-slowdown-gpio=5 -D 4
-
 if you have the adafruit hat : 
 
     sudo ./demo --led-rows=64 --led-cols=64 --led-gpio-mapping=adafruit-hat --led-slowdown-gpio=5 -D 0
 
+with the 6 panels connected : 
+
+    sudo ./demo --led-rows=64 --led-cols=64 --led-chain 3 --led-parallel 2 --led-slowdown-gpio=5 -D 4
+
 test the python samples : 
 
     cd /home/cube/rpi-rgb-led-matrix/bindings/python/samples
+
+with one panel : 
+
+    sudo python pulsing-colors.py --led-rows=64 --led-cols=64 --led-slowdown-gpio=5
+
+with all the panels : 
+
     sudo python pulsing-colors.py --led-rows=64 --led-cols=64 --led-chain 3 --led-parallel 2 --led-slowdown-gpio=5
 
-## Python lib and sample apps : 
+### LIS3DH accelerometer : 
 
-We will use a python venv : 
-
-See doc in [install-python-deps.md](install-python-deps.md)
-
-### Activate the venv : 
-
-This is very important for the rest of the installation, because all python packages must be installed 
-in the virtual environment.
-
-    . .venv/bin/activate
-
-## LIS3DH accelerometer : 
-
-Install the lib to access the GPIO in python : 
-
-    pip3 install RPi.GPIO adafruit-blinka
-
-### Detect LIS3DH
+Connect the LIS3DH and do : 
        
     i2cdetect -y 1
 
@@ -153,59 +164,6 @@ the command must return :
 
 This shows that the LIS3DH has the address 0x18. 
 
-### Test LIS3DH
+## Next steps 
 
-Test with the script `src/samples/tests/test-lis3dh.py` :
-
-    python src/samples/tests/test-lis3dh.py
-
-
-## rgbmatrix library
-
-We will use the python bindings created while installing the rpi-rgb library before.
-
-DO NOT install rgbmatrix in the venv otherwise it will be impossible to update it, for exemple, to update the pixel mapper.
-
-
-## custom mapper
-
-TODO
-
-
-## other python deps
-
-    pip install fastapi uvicorn 'uvicorn[standard]'
-
-## our own library
-
-Install our ledcube python stack :
-
-    pip install --editable .
-
-Test : 
-
-    # one panel : 
-    sudo -E env PATH=$PATH python src/samples/rgb.py --led-slowdown-gpio 5
-
-    # all panels : 
-    sudo -E env PATH=$PATH python src/samples/rgb3d.py --led-slowdown-gpio 5 --led-rows=64 --led-cols=64 --led-chain 3 --led-parallel 2
-
-
-----
-
-### Using "sudo" in a Python venv. 
-
-We need to have root privileges to get good performances, so we need to use sudo.
-
-Here is how to use a python venv with sudo  :
-
-    sudo -E env PATH=$PATH ...
-
-example : 
-
-    (.venv) $ sudo -E env PATH=$PATH python -c 'import sys; print(sys.path)'
-    (.venv) $ sudo -E env PATH=$PATH pip -VV
-
-Note: sudo is only needed when running a python script which uses the rip-rgb lib. It is not needed otherwise.
-
-
+You can now install the Python software by following [python-installation.md](python-installation.md).
