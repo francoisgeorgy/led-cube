@@ -166,4 +166,4 @@ This shows that the LIS3DH has the address 0x18.
 
 ## Next steps 
 
-You can now install the Python software by following [python-installation.md](python-installation.md).
+You can now install the Python software by following [python-installation.md](https://github.com/francoisgeorgy/led-cube-python/blob/main/installation.md).

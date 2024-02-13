@@ -27,8 +27,6 @@ OS and base software installation
 Read [os-installation.md](os-installation.md).
 
 
-----
-
 ## Credits
 
 This project would not have been possible without the following resources : 
