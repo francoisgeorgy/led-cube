@@ -13,6 +13,7 @@ Edit a connection
         Mode : <Client>
         Security : WPA & WPA2 Personal
         Password : 
+    <OK>
     <Back>
     Quit
     <OK>
@@ -25,6 +26,7 @@ The networks definitions files are in `/etc/NetworkManager/system-connections/`.
 
 - https://forums.raspberrypi.com/viewtopic.php?t=360175
 - https://forums.raspberrypi.com/viewtopic.php?t=357623
+- https://www.jeffgeerling.com/blog/2023/nmcli-wifi-on-raspberry-pi-os-12-bookworm
 
 ## useful commands
     
